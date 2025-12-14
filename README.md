@@ -66,7 +66,7 @@ The panel features a **3D printed enclosure** mounted on top of the KEBA KeConta
 | Component | Description | Link |
 |-----------|-------------|------|
 | **ESP32 Board** | ESP32_Relay_X4_V1.1 (LC Technology) | [AliExpress](https://www.aliexpress.com/item/1005008762604101.html) |
-| **LED Buttons** | 12V LED Momentary Push Buttons AL6-M (4 colors) | [AliExpress](https://www.aliexpress.com/item/1005007250758674.html) |
+| **LED Buttons** | 12V LED Momentary Push Buttons AL6-M (4 colors) (COM-NO contacts required) | [AliExpress](https://www.aliexpress.com/item/1005007250758674.html) |
 | **Status LED Panel** | ST-009 4-Bit Indicator Light Module (DC 3.3-5V) | [AliExpress](https://www.aliexpress.com/item/1005009691105445.html) |
 | **DC Power Socket** | 5.5mm x 2.5mm Female Panel Mount Connector | [AliExpress](https://www.aliexpress.com/item/1005006755624202.html) |
 | **Power Supply** | 12V 2A AC/DC Adapter (5.5mm x 2.5mm plug) | [AliExpress](https://www.aliexpress.com/item/1005007286854242.html) |
