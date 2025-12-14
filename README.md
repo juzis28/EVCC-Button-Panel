@@ -6,12 +6,20 @@
 
 ESP32-based control panel for managing **EVCC** (Electric Vehicle Charge Controller) charging modes through **Home Assistant**. Physical buttons with LED indicators allow easy mode switching, while a separate status LED panel shows system health.
 
-
 ## ⚠️ Disclaimer
 
 **This project is for personal use and educational purposes only.**
 
 The author assumes no responsibility for any damage, malfunction, or issues arising from the use of this project. Use at your own risk. This documentation is provided "as is" for informational purposes only. Always consult qualified professionals when working with electrical systems and EV charging equipment.
+
+### 🔄 Bidirectional Synchronization
+
+The panel is **fully synchronized** with EVCC and Home Assistant - changes work **in both directions**:
+- Press a physical button → EVCC mode changes → Home Assistant updates
+- Change mode in Home Assistant → EVCC updates → Panel LED reflects new mode
+- Change mode in EVCC web UI → Home Assistant syncs → Panel LED updates automatically
+
+This ensures the panel always shows the **current active mode**, regardless of where the change was initiated.
 
 ## 🎯 Project Background
 
@@ -37,6 +45,7 @@ This project was developed for personal use with the following setup:
 | **4 Charging Modes** | OFF, SOLAR (PV), MIN+PV, FAST (NOW) |
 | **Physical Buttons** | Momentary buttons with integrated LED indicators |
 | **Status LED Panel** | 4-LED panel (D1-D4) showing Power, HA, WiFi, EVCC status |
+| **Bidirectional Sync** | Panel ↔ Home Assistant ↔ EVCC fully synchronized |
 | **Error Mode** | All LEDs blink when WiFi/HA connection lost |
 | **5s Restart** | Hold OFF button for 5 seconds to restart ESP32 |
 | **Night Mode** | Disable button LEDs via Home Assistant boolean |
@@ -249,8 +258,8 @@ automation:
 | File | Description |
 |------|-------------|
 | `keba-evcc-panel-v2.1.yaml` | ESPHome configuration |
-| `ESP32_Relay_Soldering_Guide_v2.1.pdf` | Wiring schematic |
-| `KEBA_EVCC_Panel_Manual.pdf` | Complete documentation |
+| `doc/ESP32_Relay_Soldering_Guide_v2.1.pdf` | Wiring schematic |
+| `doc/KEBA_EVCC_Panel_Manual.pdf` | Complete documentation |
 
 ## 🔗 Resources
 
