@@ -50,16 +50,16 @@ This project was developed for personal use with the following setup:
 The panel features a **3D printed enclosure** mounted on top of the KEBA KeContact P30 charger:
 
 <p align="center">
-  <img src="doc/images/panel_off_mode.jpg" alt="OFF Mode" width="280"/>
-  <img src="doc/images/panel_pv_mode.jpg" alt="PV Mode" width="280"/>
-  <img src="doc/images/panel_minpv_mode.jpg" alt="MIN+PV Mode" width="280"/>
+  <img src="doc/images/panel_off_mode.png" alt="OFF Mode" width="280"/>
+  <img src="doc/images/panel_pv_mode.png" alt="PV Mode" width="280"/>
+  <img src="doc/images/panel_minpv_mode.png" alt="MIN+PV Mode" width="280"/>
 </p>
 <p align="center">
   <em>Operating modes: OFF (Red) | PV/Solar (Yellow) | MIN+PV (Green)</em>
 </p>
 
 <p align="center">
-  <img src="doc/images/panel_fast_mode.jpg" alt="FAST Mode" width="400"/>
+  <img src="doc/images/panel_fast_mode.png" alt="FAST Mode" width="400"/>
   <br><em>FAST mode (Blue) - Immediate charging at maximum power</em>
 </p>
 
