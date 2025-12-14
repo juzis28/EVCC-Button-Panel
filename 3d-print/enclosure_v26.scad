@@ -2,7 +2,7 @@
 // PART SELECTION - Set to export individual STL files
 // ============================================================================
 // 0 = show all parts assembled, 1 = body only, 2 = bottom plate, 3 = left side wall, 4 = right side wall, 5 = both side walls, 6 = DEBUG LED holes
-part_to_render = 6; 
+part_to_render = 0; 
 
 // ============================================================================
 // BUTTON HOLES
