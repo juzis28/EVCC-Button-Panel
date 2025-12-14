@@ -6,7 +6,6 @@
 
 ESP32-based control panel for managing **EVCC** (Electric Vehicle Charge Controller) charging modes through **Home Assistant**. Physical buttons with LED indicators allow easy mode switching, while a separate status LED panel shows system health.
 
-![Wiring Schematic](doc/ESP32_Relay_Soldering_Guide_v2.1.png)
 
 ## ⚠️ Disclaimer
 
@@ -159,6 +158,7 @@ GND Rail (P2) ──────┴──────┴──────┴─
 Button NO pins → ESP32 GPIOs (12, 13, 14, 27)
 Status LEDs → ESP32 GPIOs (16, 17, 18, 19) + P5 power
 ```
+![Wiring Schematic](doc/ESP32_Relay_Soldering_Guide_v2.1.png)
 
 ## ⚙️ Configuration
 
