@@ -108,8 +108,8 @@ The project includes a custom 3D printed enclosure designed to mount on top of t
 - Cable management channels
 - DC power jack mounting hole
 
-*openSCAD scripts and STL files available in the `3d-print/` folder (coming soon)*
-
+*openSCAD scripts and STL (to be added on request) files available in the [`3d-print`](3d-print) folder*
+![Wiring Schematic](doc/ESP32_Relay_Soldering_Guide_v2.1.png)
 ## 📌 GPIO Pinout
 
 ### Relay Outputs (Button LEDs)
