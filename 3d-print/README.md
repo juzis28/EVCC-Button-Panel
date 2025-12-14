@@ -17,6 +17,9 @@ This enclosure is designed for the **KEBA EVCC Panel** project - an ESP32-based 
 - Designed to sit neatly on top of KEBA P30 charging station
 
 The design is **fully parametric** - while currently configured for this specific project, all dimensions can be customized for different buttons, boards, and use cases.
+<p align="center">
+  <img src="../doc/images/openSCAD_enclosure.png" alt="openSCAD enclosure" width="300"/>
+</p>
 
 ---
 
