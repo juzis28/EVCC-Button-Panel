@@ -1,0 +1,218 @@
+keba_evcc:
+
+  #############################################
+  # INPUT BOOLEAN
+  #############################################
+
+  input_boolean:
+    keba_panel_disable_leds:
+      name: "KEBA panel disable leds"
+      initial: on
+
+
+  #############################################
+  # DISPLAY BUFFER
+  #############################################
+
+  input_text:
+    keba_display_text:
+      name: "KEBA display text"
+      max: 40
+
+
+  #############################################
+  # AUTOMATIONS
+  #############################################
+
+  automation:
+
+    ######################################################
+    # ENABLE LED WHEN EV CONNECTED
+    ######################################################
+    - id: keba_enable_leds_when_connected
+      alias: "KEBA Panel - Enable LEDs when EV connected"
+      mode: restart
+      trigger:
+        - platform: state
+          entity_id: binary_sensor.evcc_ev_charger_connected
+          to: "on"
+      action:
+        - service: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.keba_panel_disable_leds
+
+
+    ######################################################
+    # DISABLE LED WHEN EV DISCONNECTED (5 MIN DELAY)
+    ######################################################
+    - id: keba_disable_leds_when_disconnected
+      alias: "KEBA Panel - Disable LEDs when EV disconnected"
+      mode: restart
+      trigger:
+        - platform: state
+          entity_id: binary_sensor.evcc_ev_charger_connected
+          to: "off"
+          for: "00:05:00"
+      action:
+        - service: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.keba_panel_disable_leds
+
+
+    ######################################################
+    # RESET DISPLAY WHEN EV DISCONNECTED (5 MIN DELAY)
+    ######################################################
+    - id: keba_reset_text_on_disconnect
+      alias: "KEBA Display - Reset text on disconnect"
+      mode: restart
+      trigger:
+        - platform: state
+          entity_id: binary_sensor.evcc_ev_charger_connected
+          to: "off"
+          for: "00:05:00"
+      action:
+        - service: input_text.set_value
+          target:
+            entity_id: input_text.keba_display_text
+          data:
+            value: ""
+
+
+    ######################################################
+    # MODE CHANGE - SHOW NEW MODE FOR 12 SECONDS
+    ######################################################
+    - id: keba_display_mode_change
+      alias: "KEBA Display - Show mode when changed"
+      mode: restart
+      trigger:
+        - platform: state
+          entity_id: select.evcc_ev_charger_mode
+      action:
+        - variables:
+            mode_msg: >
+              {% if trigger.to_state.state == "off" %}Off
+              {% elif trigger.to_state.state == "pv" %}Solar
+              {% elif trigger.to_state.state == "minpv" %}Min+PV
+              {% elif trigger.to_state.state == "now" %}Fast
+              {% else %}{{ trigger.to_state.state | capitalize }}{% endif %}
+        - repeat:
+            count: 6
+            sequence:
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.keba_display_text
+                data:
+                  value: "{{ mode_msg }}"
+              - delay: "00:00:02"
+
+
+    ######################################################
+    # MAIN DISPLAY LOOP - EVERY 3 SECONDS
+    # Handles both charging and idle states
+    ######################################################
+    - id: keba_display_main_loop
+      alias: "KEBA Display - Main loop"
+      mode: restart
+      trigger:
+        - platform: time_pattern
+          seconds: "/3"
+      action:
+        - variables:
+            power: "{{ states('sensor.evcc_ev_charger_charge_power') | float(0) }}"
+            connected: "{{ is_state('binary_sensor.evcc_ev_charger_connected', 'on') }}"
+            mode: "{{ states('select.evcc_ev_charger_mode') }}"
+            cycle: "{{ now().timestamp() | int % 12 }}"
+
+        - choose:
+
+            ###################
+            # CHARGING (power > 0)
+            ###################
+            - conditions:
+                - condition: template
+                  value_template: "{{ power > 0 }}"
+              sequence:
+                - service: input_text.set_value
+                  target:
+                    entity_id: input_text.keba_display_text
+                  data:
+                    value: >
+                      {% if cycle < 9 %}{{ power | round(1) }}kW
+                      {% else %}Charging...{% endif %}
+
+            ###################
+            # IDLE - NOT CONNECTED
+            ###################
+            - conditions:
+                - condition: template
+                  value_template: "{{ not connected }}"
+              sequence:
+                - service: input_text.set_value
+                  target:
+                    entity_id: input_text.keba_display_text
+                  data:
+                    value: "{{ 'Unplugged' if cycle < 9 else '' }}"
+
+            ###################
+            # IDLE - CONNECTED BUT MODE OFF
+            ###################
+            - conditions:
+                - condition: template
+                  value_template: "{{ connected and mode == 'off' }}"
+              sequence:
+                - service: input_text.set_value
+                  target:
+                    entity_id: input_text.keba_display_text
+                  data:
+                    value: "{{ 'Standby' if cycle < 9 else 'Plugged in' }}"
+
+            ###################
+            # IDLE - CONNECTED, WAITING (mode != off)
+            ###################
+          default:
+            - service: input_text.set_value
+              target:
+                entity_id: input_text.keba_display_text
+              data:
+                value: >
+                  {% if cycle < 9 %}
+                    {% if mode == "pv" %}Solar
+                    {% elif mode == "minpv" %}Min+PV
+                    {% elif mode == "now" %}Fast
+                    {% else %}Ready{% endif %}
+                  {% else %}Waiting...{% endif %}
+
+
+    ######################################################
+    # REALTIME POWER UPDATE (on power change only)
+    ######################################################
+    - id: keba_display_power_update
+      alias: "KEBA Display - Realtime power update"
+      mode: restart
+      trigger:
+        - platform: state
+          entity_id: sensor.evcc_ev_charger_charge_power
+      condition:
+        - condition: template
+          value_template: "{{ states('sensor.evcc_ev_charger_charge_power') | float(0) > 0 }}"
+      action:
+        - service: input_text.set_value
+          target:
+            entity_id: input_text.keba_display_text
+          data:
+            value: "{{ states('sensor.evcc_ev_charger_charge_power') | float(0) | round(1) }}kW"
+
+
+    ######################################################
+    # PUSH TO WALLBOX WHEN TEXT CHANGES
+    ######################################################
+    - id: keba_display_push_to_wallbox
+      alias: "KEBA Display - Push updates to wallbox"
+      mode: restart
+      trigger:
+        - platform: state
+          entity_id: input_text.keba_display_text
+      action:
+        - service: notify.wallbox
+          data:
+            message: "{{ states('input_text.keba_display_text') }}"
