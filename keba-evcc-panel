@@ -1,0 +1,453 @@
+esphome:
+  name: keba-evcc-panel
+  friendly_name: KEBA EVCC Panel
+  name_add_mac_suffix: false
+  on_boot:
+    priority: -100
+    then:
+      # Power LED ON immediately
+      - output.turn_on: status_led_power
+      # Check if HA is connected after boot (15s delay for WiFi + HA connection)
+      - delay: 15s
+      - if:
+          condition:
+            not:
+              api.connected:
+          then:
+            - script.execute: error_mode
+
+substitutions:
+  mode_off: "off"
+  mode_solar: "pv"
+  mode_min_solar: "minpv"
+  mode_fast: "now"
+  # Restart hold time in milliseconds
+  restart_hold_time: "5000ms"
+  # Error mode settings
+  error_blink_interval: "500ms"
+  # Set to "true" to blink OFF button LED during error, "false" to disable
+  error_blink_button_led: "true"
+
+esp32:
+  variant: esp32
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+  on_client_connected:
+    then:
+      - script.stop: error_mode
+      - output.turn_on: status_led_power
+      - output.turn_on: status_led_ha
+      - script.execute: update_leds
+
+  on_client_disconnected:
+    then:
+      - script.execute: error_mode
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  on_connect:
+    then:
+      - output.turn_on: status_led_wifi
+
+  on_disconnect:
+    then:
+      - output.turn_off: status_led_wifi
+      - script.execute: error_mode
+
+  ap:
+    ssid: "KEBA Panel Setup"
+    password: "12345678"
+
+web_server:
+  port: 80
+
+
+# -------------------------------------------------------
+# STATUS LED PANEL (3-4x LED on separate GPIO)
+# Active HIGH - LED lights when GPIO is HIGH
+# Power: 5V from P2 or P4 header
+# -------------------------------------------------------
+
+output:
+  # LED 1 - Red - Power indicator (blinks on error!)
+  # ACTIVE LOW: LED lights up when GPIO is LOW
+  - platform: gpio
+    id: status_led_power
+    pin:
+      number: GPIO16
+      inverted: true
+
+  # LED 2 - Green - Home Assistant connection
+  - platform: gpio
+    id: status_led_ha
+    pin:
+      number: GPIO17
+      inverted: true
+
+  # LED 3 - Yellow - WiFi connection
+  - platform: gpio
+    id: status_led_wifi
+    pin:
+      number: GPIO18
+      inverted: true
+
+  # LED 4 - Blue - EVCC entity received (optional - can skip if using 3 LED panel)
+  - platform: gpio
+    id: status_led_evcc
+    pin:
+      number: GPIO19
+      inverted: true
+
+
+# -------------------------------------------------------
+# RELAYS - BUTTON LED CONTROL
+# -------------------------------------------------------
+
+switch:
+  - platform: gpio
+    id: relay_off
+    name: "EVCC LED Off"
+    pin: GPIO26
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    id: relay_solar
+    name: "EVCC LED Solar"
+    pin: GPIO25
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    id: relay_min_solar
+    name: "EVCC LED Min+Solar"
+    pin: GPIO33
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    id: relay_fast
+    name: "EVCC LED Fast"
+    pin: GPIO32
+    restore_mode: ALWAYS_OFF
+
+
+# -------------------------------------------------------
+# GLOBALS
+# -------------------------------------------------------
+
+globals:
+  - id: error_active
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
+
+# -------------------------------------------------------
+# HA BOOLEAN - RELAY/LED ENABLE CONTROL
+# When OFF or unavailable: relays work normally
+# When ON: relays are disabled (no button LEDs)
+# -------------------------------------------------------
+
+binary_sensor:
+  # HA Boolean to disable button LEDs
+  - platform: homeassistant
+    id: ha_disable_button_leds
+    entity_id: input_boolean.keba_panel_disable_leds
+    on_state:
+      then:
+        - script.execute: update_leds
+
+  # -------------------------------------------------------
+  # PHYSICAL BUTTONS
+  # -------------------------------------------------------
+
+  - platform: gpio
+    id: sw_off
+    name: "Physical Button Off"
+    pin:
+      number: GPIO12  # Strapping pin - works with INPUT_PULLUP when button pulls to GND
+      mode: INPUT_PULLUP
+      inverted: true
+    filters: 
+      - delayed_on: 20ms
+      - delayed_off: 100ms
+    on_press:
+      - if:
+          condition:
+            lambda: |-
+              return !id(sw_solar).state && !id(sw_minsolar).state && !id(sw_fast).state;
+          then:
+            - button.press: btn_ha_off
+    # Long press (5 seconds) to restart ESP32
+    on_click:
+      min_length: ${restart_hold_time}
+      max_length: 10000ms
+      then:
+        - logger.log: "OFF button held for 5 seconds - Restarting ESP32..."
+        # Stop error mode if running
+        - script.stop: error_mode
+        # Blink all status LEDs 3 times rapidly to confirm restart
+        - repeat:
+            count: 3
+            then:
+              - output.turn_off: status_led_power
+              - output.turn_off: status_led_ha
+              - output.turn_off: status_led_wifi
+              - output.turn_off: status_led_evcc
+              - switch.turn_off: relay_off
+              - delay: 150ms
+              - output.turn_on: status_led_power
+              - output.turn_on: status_led_ha
+              - output.turn_on: status_led_wifi
+              - output.turn_on: status_led_evcc
+              - switch.turn_on: relay_off
+              - delay: 150ms
+        - delay: 300ms
+        - button.press: restart_button
+
+  - platform: gpio
+    id: sw_solar
+    name: "Physical Button Solar"
+    pin:
+      number: GPIO13
+      mode: INPUT_PULLUP
+      inverted: true
+    filters: 
+      - delayed_on: 20ms
+      - delayed_off: 100ms
+    on_press:
+      - if:
+          condition:
+            lambda: |-
+              return !id(sw_off).state && !id(sw_minsolar).state && !id(sw_fast).state;
+          then:
+            - button.press: btn_ha_solar
+
+  - platform: gpio
+    id: sw_minsolar
+    name: "Physical Button Min+Solar"
+    pin:
+      number: GPIO14
+      mode: INPUT_PULLUP
+      inverted: true
+    filters: 
+      - delayed_on: 20ms
+      - delayed_off: 100ms
+    on_press:
+      - if:
+          condition:
+            lambda: |-
+              return !id(sw_off).state && !id(sw_solar).state && !id(sw_fast).state;
+          then:
+            - button.press: btn_ha_minsolar
+
+  - platform: gpio
+    id: sw_fast
+    name: "Physical Button Fast"
+    pin:
+      number: GPIO27
+      mode: INPUT_PULLUP
+      inverted: true
+    filters: 
+      - delayed_on: 20ms
+      - delayed_off: 100ms
+    on_press:
+      - if:
+          condition:
+            lambda: |-
+              return !id(sw_off).state && !id(sw_solar).state && !id(sw_minsolar).state;
+          then:
+            - button.press: btn_ha_fast
+
+
+# -------------------------------------------------------
+# VIRTUAL BUTTONS (HA CONTROL)
+# -------------------------------------------------------
+
+button:
+  - platform: template
+    name: "EVCC Off"
+    id: btn_ha_off
+    on_press:
+      - homeassistant.action:
+          action: select.select_option
+          data:
+            entity_id: select.evcc_ev_charger_mode
+            option: ${mode_off}
+
+  - platform: template
+    name: "EVCC Solar"
+    id: btn_ha_solar
+    on_press:
+      - homeassistant.action:
+          action: select.select_option
+          data:
+            entity_id: select.evcc_ev_charger_mode
+            option: ${mode_solar}
+
+  - platform: template
+    name: "EVCC Min+Solar"
+    id: btn_ha_minsolar
+    on_press:
+      - homeassistant.action:
+          action: select.select_option
+          data:
+            entity_id: select.evcc_ev_charger_mode
+            option: ${mode_min_solar}
+
+  - platform: template
+    name: "EVCC Fast"
+    id: btn_ha_fast
+    on_press:
+      - homeassistant.action:
+          action: select.select_option
+          data:
+            entity_id: select.evcc_ev_charger_mode
+            option: ${mode_fast}
+
+  # Restart button for long-press functionality
+  - platform: restart
+    id: restart_button
+    name: "Restart ESP32"
+
+
+# -------------------------------------------------------
+# EVCC MODE FROM HA (TEXT SENSOR)
+# -------------------------------------------------------
+
+text_sensor:
+  - platform: homeassistant
+    id: ha_evcc_mode
+    entity_id: select.evcc_ev_charger_mode
+    on_value:
+      then:
+        # EVCC entity received - turn on blue status LED
+        - output.turn_on: status_led_evcc
+        - script.execute: update_leds
+
+
+# -------------------------------------------------------
+# SCRIPTS
+# -------------------------------------------------------
+
+script:
+  # ERROR MODE - All status LEDs blink, OFF button LED blinks (configurable)
+  - id: error_mode
+    mode: restart
+    then:
+      - lambda: |-
+          id(error_active) = true;
+      # Turn off all button LEDs
+      - switch.turn_off: relay_off
+      - switch.turn_off: relay_solar
+      - switch.turn_off: relay_min_solar
+      - switch.turn_off: relay_fast
+      # Blink all status LEDs + OFF button LED (if enabled)
+      - while:
+          condition:
+            lambda: |-
+              return id(error_active);
+          then:
+            # All LEDs OFF
+            - output.turn_off: status_led_power
+            - output.turn_off: status_led_ha
+            - output.turn_off: status_led_wifi
+            - output.turn_off: status_led_evcc
+            # OFF button LED OFF (if blinking enabled)
+            - if:
+                condition:
+                  lambda: 'return ${error_blink_button_led};'
+                then:
+                  - switch.turn_off: relay_off
+            - delay: ${error_blink_interval}
+            # All LEDs ON
+            - output.turn_on: status_led_power
+            - output.turn_on: status_led_ha
+            - output.turn_on: status_led_wifi
+            - output.turn_on: status_led_evcc
+            # OFF button LED ON (if blinking enabled)
+            - if:
+                condition:
+                  lambda: 'return ${error_blink_button_led};'
+                then:
+                  - switch.turn_on: relay_off
+            - delay: ${error_blink_interval}
+
+  # Main LED update script
+  - id: update_leds
+    mode: restart
+    then:
+      # Clear error state
+      - lambda: |-
+          id(error_active) = false;
+
+      # Check if button LEDs should be disabled via HA boolean
+      - if:
+          condition:
+            lambda: |-
+              // If HA boolean exists and is ON, disable button LEDs
+              if (id(ha_disable_button_leds).has_state()) {
+                return id(ha_disable_button_leds).state;
+              }
+              return false;
+          then:
+            # Button LEDs disabled - turn off all relays
+            - switch.turn_off: relay_off
+            - switch.turn_off: relay_solar
+            - switch.turn_off: relay_min_solar
+            - switch.turn_off: relay_fast
+            - script.stop: update_leds
+
+      # Normal operation - update button LEDs based on EVCC mode
+      # Turn off all relays first
+      - switch.turn_off: relay_off
+      - switch.turn_off: relay_solar
+      - switch.turn_off: relay_min_solar
+      - switch.turn_off: relay_fast
+
+      # OFF mode
+      - if:
+          condition:
+            text_sensor.state:
+              id: ha_evcc_mode
+              state: ${mode_off}
+          then:
+            - switch.turn_on: relay_off
+            - script.stop: update_leds
+
+      # SOLAR mode
+      - if:
+          condition:
+            text_sensor.state:
+              id: ha_evcc_mode
+              state: ${mode_solar}
+          then:
+            - switch.turn_on: relay_solar
+            - script.stop: update_leds
+
+      # MIN+SOLAR mode
+      - if:
+          condition:
+            text_sensor.state:
+              id: ha_evcc_mode
+              state: ${mode_min_solar}
+          then:
+            - switch.turn_on: relay_min_solar
+            - script.stop: update_leds
+
+      # FAST mode
+      - if:
+          condition:
+            text_sensor.state:
+              id: ha_evcc_mode
+              state: ${mode_fast}
+          then:
+            - switch.turn_on: relay_fast
+            - script.stop: update_leds
