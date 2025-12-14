@@ -50,16 +50,16 @@ This project was developed for personal use with the following setup:
 The panel features a **3D printed enclosure** mounted on top of the KEBA KeContact P30 charger:
 
 <p align="center">
-  <img src="docs/images/panel_off_mode.jpg" alt="OFF Mode" width="280"/>
-  <img src="docs/images/panel_pv_mode.jpg" alt="PV Mode" width="280"/>
-  <img src="docs/images/panel_minpv_mode.jpg" alt="MIN+PV Mode" width="280"/>
+  <img src="doc/images/panel_off_mode.jpg" alt="OFF Mode" width="280"/>
+  <img src="doc/images/panel_pv_mode.jpg" alt="PV Mode" width="280"/>
+  <img src="doc/images/panel_minpv_mode.jpg" alt="MIN+PV Mode" width="280"/>
 </p>
 <p align="center">
   <em>Operating modes: OFF (Red) | PV/Solar (Yellow) | MIN+PV (Green)</em>
 </p>
 
 <p align="center">
-  <img src="docs/images/panel_fast_mode.jpg" alt="FAST Mode" width="400"/>
+  <img src="doc/images/panel_fast_mode.jpg" alt="FAST Mode" width="400"/>
   <br><em>FAST mode (Blue) - Immediate charging at maximum power</em>
 </p>
 
@@ -82,17 +82,17 @@ The panel features a **3D printed enclosure** mounted on top of the KEBA KeConta
 ### Component Photos
 
 <p align="center">
-  <img src="docs/images/esp32_relay_x4.png" alt="ESP32 Relay X4 Board" width="400"/>
+  <img src="doc/images/esp32_relay_x4.png" alt="ESP32 Relay X4 Board" width="400"/>
   <br><em>ESP32_Relay_X4_V1.1 Board</em>
 </p>
 
 <p align="center">
-  <img src="docs/images/led_buttons.png" alt="LED Push Buttons" width="400"/>
+  <img src="doc/images/led_buttons.png" alt="LED Push Buttons" width="400"/>
   <br><em>12V LED Momentary Push Buttons (AL6-M)</em>
 </p>
 
 <p align="center">
-  <img src="docs/images/status_led_panel.png" alt="Status LED Panel" width="400"/>
+  <img src="doc/images/status_led_panel.png" alt="Status LED Panel" width="400"/>
   <br><em>ST-009 4-Bit Status LED Indicator Module</em>
 </p>
 
