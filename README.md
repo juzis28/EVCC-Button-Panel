@@ -83,17 +83,17 @@ The panel features a **3D printed enclosure** mounted on top of the KEBA KeConta
 ### Component Photos
 
 <p align="center">
-  <img src="doc/images/esp32_relay_x4.png" alt="ESP32 Relay X4 Board" width="400"/>
+  <img src="doc/images/esp32_relay_x4.png" alt="ESP32 Relay X4 Board" width="200"/>
   <br><em>ESP32_Relay_X4_V1.1 Board</em>
 </p>
 
 <p align="center">
-  <img src="doc/images/led_buttons.png" alt="LED Push Buttons" width="400"/>
+  <img src="doc/images/led_buttons.png" alt="LED Push Buttons" width="200"/>
   <br><em>12V LED Momentary Push Buttons (AL6-M)</em>
 </p>
 
 <p align="center">
-  <img src="doc/images/status_led_panel.png" alt="Status LED Panel" width="400"/>
+  <img src="doc/images/status_led_panel.png" alt="Status LED Panel" width="200"/>
   <br><em>ST-009 4-Bit Status LED Indicator Module</em>
 </p>
 
